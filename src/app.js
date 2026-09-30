@@ -72,9 +72,10 @@
       var id = z.def.id;
       var card = el('article', { class: 'zone', id: 'zone-' + id, 'aria-label': z.def.name });
       card.innerHTML =
-        '<div class="zone-head"><h3>' + z.def.name + '</h3><span class="pill" data-f="pill"></span></div>' +
-        '<div class="row"><span class="layer">Sense</span><div><div class="readouts" data-f="sense"></div><p class="note" data-f="note"></p></div></div>' +
-        '<div class="row"><span class="layer">Think</span><div class="readouts" data-f="think"></div></div>' +
+        '<div class="zone-head"><h3 title="' + z.def.name + '">' + z.def.name + '</h3><span class="pill" data-f="pill"></span>' +
+          '<span class="conf" data-f="conf"><span class="bars" aria-hidden="true"><i></i><i></i><i></i></span><span data-f="conf-text"></span></span></div>' +
+        '<div class="row"><span class="layer">Sense</span><div><div class="readouts" data-f="sense"></div><p class="note clamp2" data-f="note"></p></div></div>' +
+        '<div class="row"><span class="layer">Think</span><div><div class="readouts" data-f="think"></div><p class="note clamp2" data-f="why"></p></div></div>' +
         '<div class="row"><span class="layer">Act</span><div data-f="act" style="display:grid;gap:6px"></div></div>' +
         '<div class="zone-controls">' +
           '<span class="people"><button type="button" data-a="minus" aria-label="One person leaves ' + z.def.name + '">−</button>' +
@@ -115,8 +116,10 @@
       if (!d) return;
       var pill = f('pill');
       if (d.anomaly) { pill.className = 'pill crit'; pill.textContent = 'Waste detected'; }
-      else if (d.occupied) { pill.className = 'pill occ'; pill.textContent = 'Occupied · ' + d.confidence + ' confidence'; }
+      else if (d.occupied) { pill.className = 'pill occ'; pill.textContent = 'Occupied'; }
       else { pill.className = 'pill vac'; pill.textContent = 'Empty ' + fmtMin(d.vacantMin === Infinity ? 999 : d.vacantMin); }
+      f('conf').setAttribute('data-level', d.confidence);
+      f('conf-text').textContent = d.confidence.charAt(0).toUpperCase() + d.confidence.slice(1) + ' confidence ' + (d.occupied ? 'someone is here' : 'zone is empty');
       card.classList.toggle('alert', !!d.anomaly);
 
       f('sense').innerHTML =
@@ -125,12 +128,14 @@
         (z.def.hasCooling === false ? '' : '<span><span class="num">' + r.tempC.toFixed(1) + '</span>°C</span>') +
         '<span><span class="num">' + z.kw.toFixed(2) + '</span> kW</span>';
       f('note').textContent = d.note;
+      f('note').title = d.note;
 
       var manual = z.manualPeople !== null;
       f('think').innerHTML =
         '<span>Estimated <span class="num">' + d.headcount + '</span> people</span>' +
-        '<span class="k">(actually ' + z.people + (manual ? ', set by you' : '') + ')</span>' +
-        (d.reasons[0] ? '<span class="k">' + d.reasons.join('. ') + '</span>' : '');
+        '<span class="k">(actually ' + z.people + (manual ? ', set by you' : '') + ')</span>';
+      f('why').textContent = d.reasons.join('. ');
+      f('why').title = d.reasons.join('. ');
 
       var power;
       if (d.powerOn && d.powerCountdownMin !== null) power = '<span class="state-wait">Off in ' + Math.ceil(d.powerCountdownMin) + ' min</span>';
