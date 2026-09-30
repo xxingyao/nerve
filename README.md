@@ -12,6 +12,8 @@ This repo is a low-fi, testable MVP for the hackathon. It has three parts:
 | **Engine** (`src/engine.js`) | The SENSE → THINK → ACT decision logic. Pure JavaScript, no dependencies, the same code in the browser and in Node. | `npm test` |
 | **Baseline tool** (`tools/baseline.js`) | Finds the headline number in real meter data, e.g. "load never drops below X kW at night; after-hours use costs S$Y a year". | `node tools/baseline.js your-meter.csv` |
 
+**Live page:** https://xxingyao.github.io/nerve/ (deployed by `.github/workflows/pages.yml` on every push; see *Publishing* below).
+
 Needs Node 18+ only for the tests and the baseline tool. The console runs in any browser.
 
 ## How NERVE decides
@@ -55,6 +57,10 @@ It reports total and after-hours energy, the midnight-6am floor, the worst after
 ## What is simulated
 
 Everything in the console is simulated: headcount follows a typical weekday, and room temperature uses a simple heat-balance model. Business as usual runs three times with different assumptions (24°C / 23°C / 22.5°C setpoint, 10% / 30% / 50% of desks left on overnight), which is where the savings range comes from. Real savings need a pilot, for example one SUSS floor measured for two weeks without NERVE and then two weeks with it.
+
+## Publishing
+
+`.github/workflows/pages.yml` runs the tests, then publishes `index.html` and `src/` to GitHub Pages. One-time setup: in the repo on GitHub, go to **Settings → Pages → Build and deployment → Source** and choose **GitHub Actions**. Then push, or run the workflow from the **Actions** tab. GitHub Pages on a private repo needs a paid GitHub plan; on a free account, make the repo public.
 
 ## Layout
 
