@@ -1,0 +1,12 @@
+{
+  "name": "nerve",
+  "version": "0.1.0",
+  "description": "NERVE: occupancy-aware office energy MVP (simulated demo, decision engine, meter-data analysis)",
+  "private": true,
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "baseline": "node tools/baseline.js",
+    "sample-data": "node tools/make-sample-data.js"
+  },
+  "license": "MIT"
+}

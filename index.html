@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<title>NERVE Office Console</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: an instrument console. Office floor (sense + act) on the left, the engine's reasoning (think) on the right. */
+:root {
+  --bg: #eef2f0;
+  --surface: #ffffff;
+  --sunken: #e3e9e6;
+  --ink: #13201b;
+  --muted: #56645e;
+  --line: #d3dcd8;
+  --accent: #0d6b57;
+  --accent-ink: #ffffff;
+  --series-nerve: #2a78d6;
+  --series-bau: #eb6834;
+  --good: #1a7f37;
+  --warn: #9a5b00;
+  --crit: #c0262d;
+  --good-bg: #e2f3e6;
+  --warn-bg: #fbefd9;
+  --crit-bg: #fbe3e3;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1412; --surface: #151d1a; --sunken: #1c2622; --ink: #e6eeea; --muted: #9aaaa3; --line: #2a3632;
+    --accent: #3fb896; --accent-ink: #06231b; --series-nerve: #3987e5; --series-bau: #d95926;
+    --good: #5cc57a; --warn: #e0a440; --crit: #ef6b6b; --good-bg: #16301f; --warn-bg: #33270f; --crit-bg: #3a1a1a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1412; --surface: #151d1a; --sunken: #1c2622; --ink: #e6eeea; --muted: #9aaaa3; --line: #2a3632;
+  --accent: #3fb896; --accent-ink: #06231b; --series-nerve: #3987e5; --series-bau: #d95926;
+  --good: #5cc57a; --warn: #e0a440; --crit: #ef6b6b; --good-bg: #16301f; --warn-bg: #33270f; --crit-bg: #3a1a1a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 var(--font-body); }
+.wrap { max-width: 1320px; margin: 0 auto; padding-inline: 16px; padding-block: 16px 40px; display: grid; gap: 16px; }
+h1, h2, h3 { font-family: var(--font-display); margin: 0; text-wrap: balance; }
+.num, .mono { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+button, select, input { font: inherit; color: inherit; }
+button { cursor: pointer; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 10px; }
+button:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+/* Top bar */
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+.brand { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-right: auto; }
+.brand h1 { font-size: 30px; font-weight: 800; letter-spacing: 0.04em; }
+.brand p { margin: 0; color: var(--muted); font-size: 13px; }
+.clock { display: flex; align-items: baseline; gap: 10px; }
+.clock .time { font-size: 26px; font-weight: 500; }
+.clock .meta { color: var(--muted); font-size: 13px; }
+.transport { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.transport label { font-size: 13px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+select { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 8px; }
+.sim-tag { font: 500 11px var(--font-data); letter-spacing: 0.08em; text-transform: uppercase; color: var(--warn); background: var(--warn-bg); border-radius: 999px; padding: 3px 8px; }
+
+/* Scenarios */
+.scenarios { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; }
+.scenario { text-align: left; display: grid; gap: 2px; padding: 10px 12px; }
+.scenario b { font-weight: 600; }
+.scenario span { color: var(--muted); font-size: 13px; }
+.scenario.active { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.story { margin: 0; padding: 10px 14px; border-left: 3px solid var(--accent); background: var(--surface); border-radius: 0 8px 8px 0; min-height: 44px; }
+
+/* Main grid */
+.main { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 980px) { .main { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 14px; min-width: 0; }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.panel-head h2 { font-size: 18px; font-weight: 600; }
+.layer { font: 500 11px var(--font-data); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.layer b { color: var(--accent); font-weight: 500; }
+
+/* Zones */
+.zones { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 620px) { .zones { grid-template-columns: minmax(0, 1fr); } }
+.zone { border: 1px solid var(--line); border-radius: var(--r); padding: 12px; display: grid; gap: 10px; background: var(--bg); min-width: 0; }
+.zone.alert { border-color: var(--crit); box-shadow: inset 0 0 0 1px var(--crit); }
+.zone-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.zone-head h3 { font-size: 16px; font-weight: 600; }
+.pill { font-size: 12px; font-weight: 600; border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
+.pill.occ { color: var(--good); background: var(--good-bg); }
+.pill.vac { color: var(--muted); background: var(--sunken); }
+.pill.crit { color: var(--crit); background: var(--crit-bg); }
+.row { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 8px; align-items: start; }
+.row > .layer { padding-top: 2px; }
+.readouts { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 14px; }
+.readouts .k { color: var(--muted); }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--line); margin-right: 5px; vertical-align: 0; }
+.dot.on { background: var(--good); box-shadow: 0 0 0 3px var(--good-bg); }
+.note { font-size: 13px; color: var(--muted); margin: 0; }
+.meter { height: 8px; border-radius: 4px; background: var(--sunken); overflow: hidden; flex: 1 1 80px; min-width: 60px; align-self: center; }
+.meter i { display: block; height: 100%; background: var(--series-nerve); border-radius: 4px; transition: width .25s; }
+.act-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; font-size: 14px; }
+.state-on { color: var(--good); font-weight: 600; }
+.state-off { color: var(--muted); font-weight: 600; }
+.state-wait { color: var(--warn); font-weight: 600; }
+.zone-controls { display: flex; flex-wrap: wrap; gap: 6px; border-top: 1px dashed var(--line); padding-top: 10px; }
+.zone-controls button { padding: 4px 8px; font-size: 13px; }
+.people { display: flex; align-items: center; gap: 4px; }
+.people .num { min-width: 1.6em; text-align: center; }
+
+/* KPIs */
+.kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.kpi { background: var(--bg); border-radius: 8px; padding: 10px 12px; display: grid; gap: 2px; min-width: 0; }
+.kpi .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.kpi .value { font: 500 24px var(--font-data); font-variant-numeric: tabular-nums; }
+.kpi .sub { font-size: 13px; color: var(--muted); }
+.kpi.hero .value { color: var(--good); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; padding: 4px 10px; font-size: 13px; }
+
+/* Chart */
+.chart-wrap { position: relative; }
+.chart { width: 100%; height: auto; display: block; }
+.chart text { fill: var(--muted); font: 11px var(--font-data); }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.legend { display: flex; gap: 16px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+.swatch { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; font-size: 12px; box-shadow: 0 4px 14px rgb(0 0 0 / 0.12); white-space: nowrap; }
+
+/* Alerts + log */
+.alerts { display: grid; gap: 8px; }
+.alert-card { border-radius: 8px; padding: 10px 12px; background: var(--crit-bg); border: 1px solid var(--crit); display: grid; gap: 4px; }
+.alert-card strong { color: var(--crit); }
+.alert-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; font-size: 13px; }
+.alert-grid .num { font-size: 16px; }
+.quiet { color: var(--muted); font-size: 14px; margin: 0; }
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 280px; overflow-y: auto; font-size: 13px; }
+.log li { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 8px; }
+.log .when { color: var(--muted); }
+.log .anomaly { color: var(--crit); font-weight: 600; }
+.log .boost { color: var(--warn); }
+
+details { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 16px; }
+summary { cursor: pointer; font-weight: 600; }
+details p, details li { color: var(--muted); font-size: 14px; max-width: 75ch; }
+.settings { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; font-size: 14px; margin-top: 10px; }
+.settings input[type="text"] { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 5px 8px; width: 160px; }
+.settings input[type="number"] { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 5px 8px; width: 80px; }
+@media (prefers-reduced-motion: reduce) { .meter i { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header class="bar">
+    <div class="brand">
+      <h1>NERVE</h1>
+      <p>Networked Energy &amp; Room Vitality Engine</p>
+      <span class="sim-tag">Simulated office</span>
+    </div>
+    <div class="clock">
+      <span class="time num" id="clock">Mon 00:00</span>
+      <span class="meta" id="weather">Outdoor 29°C</span>
+    </div>
+    <div class="transport">
+      <button class="primary" id="play" type="button">Pause</button>
+      <label for="speed">Speed
+        <select id="speed">
+          <option value="1">1 min/s</option>
+          <option value="5">5 min/s</option>
+          <option value="15" selected>15 min/s</option>
+          <option value="60">1 hr/s</option>
+        </select>
+      </label>
+      <button id="reset" type="button">Restart week</button>
+    </div>
+  </header>
+
+  <section class="scenarios" aria-label="Demo scenarios" id="scenarios"></section>
+  <p class="story" id="story">Pick a scenario above, or let the week run. Every decision NERVE makes is logged on the right with its reason.</p>
+
+  <div class="main">
+    <section class="panel" aria-labelledby="office-h">
+      <div class="panel-head">
+        <h2 id="office-h">Office floor</h2>
+        <span class="layer"><b>Sense</b> · think · <b>act</b> per zone</span>
+      </div>
+      <div class="zones" id="zones"></div>
+    </section>
+
+    <div style="display:grid;gap:16px;min-width:0">
+      <section class="panel" aria-labelledby="impact-h">
+        <div class="panel-head">
+          <h2 id="impact-h">Impact vs business as usual</h2>
+          <div class="seg" role="group" aria-label="Period">
+            <button type="button" id="p-today" aria-pressed="true">Today</button>
+            <button type="button" id="p-week" aria-pressed="false">Week so far</button>
+          </div>
+        </div>
+        <div class="kpis" id="kpis"></div>
+        <div class="chart-wrap" id="chart-wrap">
+          <div class="legend">
+            <span><i class="swatch" style="background:var(--series-nerve)"></i>NERVE</span>
+            <span><i class="swatch" style="background:var(--series-bau)"></i>Business as usual (typical office)</span>
+            <span>Total power, kW, last 24 h</span>
+          </div>
+          <svg class="chart" id="chart" viewBox="0 0 560 200" role="img" aria-label="Total office power, last 24 hours"></svg>
+          <div class="tip" id="tip" hidden></div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="alerts-h">
+        <div class="panel-head">
+          <h2 id="alerts-h">Waste alerts</h2>
+          <span class="layer"><b>Think</b></span>
+        </div>
+        <div class="alerts" id="alerts"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="log-h">
+        <div class="panel-head">
+          <h2 id="log-h">Decision log</h2>
+          <span class="layer"><b>Act</b> · with reasons</span>
+        </div>
+        <ul class="log" id="log"></ul>
+      </section>
+    </div>
+  </div>
+
+  <details id="settings-box">
+    <summary>Demo settings and real hardware</summary>
+    <div class="settings">
+      <label><input type="checkbox" id="short-timers"> Short timers for a live demo (power off after 3 min empty, cooling after 2)</label>
+      <label for="tariff">Tariff S$/kWh <input type="number" id="tariff" step="0.01" min="0" value="0.30"></label>
+    </div>
+    <p>To switch a real lamp or fan in the prototype, flash a smart plug with Tasmota (or use a Shelly plug), put it on the same Wi-Fi as this laptop, open <span class="mono">index.html</span> from disk, and enter the plug's IP. NERVE will switch it whenever it switches Workstations A. This does not work from the hosted link, because browsers block plain-HTTP calls from HTTPS pages.</p>
+    <div class="settings">
+      <label for="plug-type">Plug type
+        <select id="plug-type">
+          <option value="tasmota">Tasmota</option>
+          <option value="shelly1">Shelly (Gen 1)</option>
+          <option value="shelly2">Shelly (Gen 2+)</option>
+        </select>
+      </label>
+      <label for="plug-ip">Plug IP for Workstations A <input type="text" id="plug-ip" placeholder="192.168.1.50"></label>
+      <button type="button" id="plug-test">Test: toggle plug</button>
+      <span class="note" id="plug-status"></span>
+    </div>
+  </details>
+
+  <details>
+    <summary>What is simulated, and the assumptions behind the savings</summary>
+    <ul>
+      <li>Everything on this page is a simulation of one small office (four zones, up to 18 people). Headcount follows a typical weekday; weekends are empty.</li>
+      <li>Business as usual runs the same people through an identical office with cooling on a fixed 7:30 to 18:30 schedule and desk power on all day. It runs three times: careful (24°C setpoint, 10% of desks left on overnight), typical (23°C, 30%) and careless (22.5°C, 50%). Savings are shown as a range across the three.</li>
+      <li>Occupancy uses motion (PIR/mmWave) plus a count of Wi-Fi devices. No cameras. Wi-Fi alone only counts as presence for 10 minutes after the last motion, so a laptop left docked overnight does not keep the lights on.</li>
+      <li>Room temperature and cooling power use a simple heat-balance model. Real numbers need a pilot: measure one floor for two weeks without NERVE, then two weeks with it.</li>
+      <li>Comfort is the share of occupied minutes at or below 26°C. NERVE cools to 24.5°C, goes to full cooling above 26°C, and any occupant can ask for 1°C cooler for an hour.</li>
+    </ul>
+  </details>
+</div>
+
+<script src="src/engine.js"></script>
+<script src="src/sim.js"></script>
+<script src="src/app.js"></script>
